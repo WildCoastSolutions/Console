@@ -20,33 +20,77 @@ using namespace Wild::Console;
 using namespace std;
 
 
-void Call(Args args)
+// Example class that performs the tasks we want to create commands for.
+// Video phone that can call a remote phone and send some video.
+// The Video being sent can be switched mid call.
+class VideoPhone
 {
-    cout << "Creating call: address=" << args.Get("address") << " bitrate=" << args.Get("bitrate") << " source=" << args.Get("source") << endl;
-}
+public:
+
+    void Call(string address, string bitrate, string source)
+    {
+        cout << "Creating call to: address=" << address << " bitrate=" << bitrate << " source=" << source << endl;
+    }
+
+    void ChangeVideoSource(string source)
+    {
+        cout << "Changing source to: " << source << endl;
+    }
+
+    void Disconnect()
+    {
+        cout << "Disconnecting" << endl;
+    }
+};
 
 
 void ReadmeSampleCode()
 {
-    Console console("test", 
+    // Make a video phone
+    auto phone = make_shared<VideoPhone>();
+
+    // Create and configure the console
+    // name, version
+    Console console("test", "1.0.0",
         {    
+            // List of supported commands. help & quit are built in
+
+            // Command name, letter, description, and options and flags
             Command("call", "c", "create new call",
                 {
-                    Option("address", "a", "Remote address", Is::Required),
+                    // Required positional arg - parsing will fail if this isn't supplied
+                    PositionalArg("address", "Remote address"),
+                    // Optional option which is set to the default value if not specified
                     Option("bitrate", "b", "Call bitrate", "1024"),
+                    // Optional option which is set to the default value if not specified
                     Option("source", "s", "Video source", "test-media/1.mp4"),
                 },
-                [](Args args) { Call(args); }
+                // Handler function for when this command is called
+                [phone](Args args) 
+                    { phone->Call(
+                        args.Get("address"),
+                        args.Get("bitrate"),
+                        args.Get("source")); }
             ),
+            
+            Command("change-source", "s", "change video source",
+                // name, letter, description
+                {
+                    PositionalArg("source", "New video source")
+                },
+                    [phone](Args args) { phone->ChangeVideoSource(args.Get("source")); }
+                ),
 
             Command("disconnect", "d", "disconnect a call",
                 // name, letter, description
                 {
                     Arg("call", "c", "Call identifier"),
-                }
+                },
+                [phone](Args args) { phone->Disconnect(); }
             ),
         });
 
+    // Runs the console, returns when the quit command is given
     console.Run();
 
 }
@@ -55,30 +99,16 @@ void ReadmeSampleCode()
 
 void TestConstruction()
 {
-    AssertThrows(Args args({ }), invalid_argument);
-
-    AssertThrows(Flag("", "", ""), invalid_argument);
-    AssertThrows(Flag("version", "", ""), invalid_argument);
-    AssertThrows(Flag("", "v", ""), invalid_argument);
-    AssertThrows(Flag("v", "v", ""), invalid_argument);
-    AssertThrows(Flag("version", "vr", ""), invalid_argument);
-
-    AssertThrows(Arg("", "", ""), invalid_argument);
-    AssertThrows(Arg("version", "", ""), invalid_argument);
-    AssertThrows(Arg("", "v", ""), invalid_argument);
-    AssertThrows(Arg("v", "v", ""), invalid_argument);
-    AssertThrows(Arg("version", "vr", ""), invalid_argument);
-
-    // Can't set the default to something not in the list of possibles
-    AssertThrows(Arg("colour", "c", "Colour", { "red", "blue" }, "green"), invalid_argument);
-
+    //ReadmeSampleCode();
+    AssertThrows(Console console("", "", {}), invalid_argument);
+    AssertThrows(Console console("test", "", {}), invalid_argument);
+    AssertThrows(Console console("test", "1.0", {}), invalid_argument);
 }
 
 
 int main(int argc, char* argv[])
 {
-    ReadmeSampleCode();
-    
+    TestConstruction();
 
     EndTest
 }

@@ -83,6 +83,7 @@ namespace Wild
         private:
             typedef std::function<void(std::string command, CommandLine::Args args)> CommandHandler;
             std::string consoleName;
+            std::string version;
             std::map<std::string, std::unique_ptr<Command>> commandMap;
             std::map<std::string, std::string> letterLookup;
             std::list<Command> commands;
@@ -93,16 +94,22 @@ namespace Wild
 
             Console(
                 const std::string &consoleName,
+                const std::string &version,
                 const std::list<Command> &commands,
                 CommandHandler commandHandler = nullptr)
-                : consoleName(consoleName), commands(commands), commandHandler(commandHandler)
+                : consoleName(consoleName), version(version), commands(commands), commandHandler(commandHandler)
             {
+                if (consoleName.size() == 0) throw std::invalid_argument("console name required");
+                if (version.size() == 0) throw std::invalid_argument("version required");
+                if (commands.size() == 0) throw std::invalid_argument("console commands required");
+
                 commandMap["help"] = std::make_unique<Command>(
                     "help",
                     "h",
                     "display help",
                     [this](CommandLine::Args args) { Help(args); });
                 letterLookup["h"] = "help";
+                letterLookup["?"] = "help";
 
                 commandMap["quit"] = std::make_unique<Command>(
                     "quit",
@@ -126,7 +133,7 @@ namespace Wild
 
             void Help(CommandLine::Args args)
             {
-                std::cout << consoleName << " commands" << std::endl << std::endl;
+                std::cout << consoleName << " " << version << std::endl << std::endl;
                 std::cout << "\"help <command>\" for more info" << std::endl << std::endl;
                 for (auto command : commands)
                 {
